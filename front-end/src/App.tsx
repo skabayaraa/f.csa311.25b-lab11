@@ -25,27 +25,25 @@ interface Props { }
  */
 class App extends React.Component<Props, GameState> {
   private initialized: boolean = false;
+  private history: GameState[] = []; // Stores history for undo functionality
+  state: any;
 
   /**
    * @param props has type Props
    */
   constructor(props: Props) {
     super(props)
-    /**
-     * state has type GameState as specified in the class inheritance.
-     */
     this.state = { cells: [] }
   }
 
   /**
-   * Use arrow function, i.e., () => {} to create an async function,
-   * otherwise, 'this' would become undefined in runtime. This is
-   * just an issue of Javascript.
+   * Starts a new game by resetting the board.
    */
   newGame = async () => {
     const response = await fetch('/newgame');
     const json = await response.json();
     this.setState({ cells: json['cells'] });
+    this.history = []; // Reset the history when starting a new game
   }
 
   /**
@@ -56,23 +54,31 @@ class App extends React.Component<Props, GameState> {
    * @returns 
    */
   play(x: number, y: number): React.MouseEventHandler {
-    return async (e) => {
-      // prevent the default behavior on clicking a link; otherwise, it will jump to a new page.
+    return async (e: { preventDefault: () => void; }) => {
       e.preventDefault();
-      const response = await fetch(`/play?x=${x}&y=${y}`)
+      const response = await fetch(`/play?x=${x}&y=${y}`);
       const json = await response.json();
-      this.setState({ cells: json['cells'] });
+      const newState = json['cells'];
+      this.history.push({ cells: [...this.state.cells] }); // Save the current state for undo
+      this.setState({ cells: newState });
+    }
+  }
+  setState(arg0: { cells: any; }) {
+    throw new Error('Method not implemented.');
+  }
+
+  /**
+   * Handles the undo action by reverting to the last state
+   */
+  undo = () => {
+    if (this.history.length > 0) {
+      const previousState = this.history.pop(); // Get the last saved state
+      this.setState({ cells: previousState!.cells }); // Revert to the previous state
     }
   }
 
   createCell(cell: Cell, index: number): React.ReactNode {
     if (cell.playable)
-      /**
-       * key is used for React when given a list of items. It
-       * helps React to keep track of the list items and decide
-       * which list item need to be updated.
-       * @see https://reactjs.org/docs/lists-and-keys.html#keys
-       */
       return (
         <div key={index}>
           <a href='/' onClick={this.play(cell.x, cell.y)}>
@@ -92,10 +98,6 @@ class App extends React.Component<Props, GameState> {
    * @see https://reactjs.org/docs/react-component.html#componentdidmount
    */
   componentDidMount(): void {
-    /**
-     * setState in DidMount() will cause it to render twice which may cause
-     * this function to be invoked twice. Use initialized to avoid that.
-     */
     if (!this.initialized) {
       this.newGame();
       this.initialized = true;
@@ -108,20 +110,14 @@ class App extends React.Component<Props, GameState> {
    * @see https://reactjs.org/docs/react-component.html
    */
   render(): React.ReactNode {
-    /**
-     * We use JSX to define the template. An advantage of JSX is that you
-     * can treat HTML elements as code.
-     * @see https://reactjs.org/docs/introducing-jsx.html
-     */
     return (
       <div>
         <div id="board">
-          {this.state.cells.map((cell, i) => this.createCell(cell, i))}
+          {this.state.cells.map((cell: Cell, i: number) => this.createCell(cell, i))}
         </div>
         <div id="bottombar">
-          <button onClick={/* get the function, not call the function */this.newGame}>New Game</button>
-          {/* Exercise: implement Undo function */}
-          <button>Undo</button>
+          <button onClick={this.newGame}>New Game</button>
+          <button onClick={this.undo}>Undo</button>
         </div>
       </div>
     );

@@ -1,71 +1,63 @@
 package game;
 
-import java.util.ArrayList;
-import java.util.List;
-
-enum Player {
-    PLAYER0(0), PLAYER1(1);
-
-    final int value;
-
-    Player(int value) {
-        this.value = value;
-    }
-}
-
 public class Game {
-    private final Board board;
-    private final Player player;
-    private final List<Game> history;
+    private String[][] board; // Game board 3x3
+    private String currentPlayer; // "X" or "O"
+    private String winner; // "X", "O", or null if no winner
 
     public Game() {
-        this(new Board(), Player.PLAYER0);
+        board = new String[3][3]; // Initialize a 3x3 board
+        currentPlayer = "X"; // X starts first
+        winner = null; // No winner initially
     }
 
-    public Game(Board board, Player nextPlayer) {
-        this(board, nextPlayer, List.of());
+    public String[][] getBoard() {
+        return board;
     }
 
-    public Game(Board board, Player nextPlayer, List<Game> history) {
-        this.board = board;
-        this.player = nextPlayer;
-        this.history = history;
+    public String getCurrentPlayer() {
+        return currentPlayer;
     }
 
-    public Board getBoard() {
-        return this.board;
-    }
-
-    public Player getPlayer() {
-        return this.player;
+    public String getWinner() {
+        return winner;
     }
 
     public Game play(int x, int y) {
-        if (this.board.getCell(x, y) != null)
-            return this;
-        if (this.getWinner() != null)
-            return this;
-        List<Game> newHistory = new ArrayList<>(this.history);
-        newHistory.add(this);
-        Player nextPlayer = this.player == Player.PLAYER0 ? Player.PLAYER1 : Player.PLAYER0;
-        return new Game(this.board.updateCell(x, y, this.player), nextPlayer, newHistory);
+        if (x >= 0 && x < 3 && y >= 0 && y < 3 && board[x][y] == null) {
+            board[x][y] = currentPlayer; // Place current player's mark
+            checkWinner();
+            switchPlayer(); // After a move, switch to the other player
+        }
+        return this;
     }
 
-    public Player getWinner() {
-        for (int row = 0; row < 3; row++)
-            if (board.getCell(row, 0) != null && board.getCell(row, 0) == board.getCell(row, 1)
-                    && board.getCell(row, 1) == board.getCell(row, 2))
-                return board.getCell(row, 0);
-        for (int col = 0; col < 3; col++)
-            if (board.getCell(0, col) != null && board.getCell(0, col) == board.getCell(1, col)
-                    && board.getCell(0, col) == board.getCell(2, col))
-                return board.getCell(0, col);
-        if (board.getCell(1, 1) != null && board.getCell(0, 0) == board.getCell(1, 1)
-                && board.getCell(1, 1) == board.getCell(2, 2))
-            return board.getCell(1, 1);
-        if (board.getCell(1, 1) != null && board.getCell(0, 2) == board.getCell(1, 1)
-                && board.getCell(1, 1) == board.getCell(2, 0))
-            return board.getCell(1, 1);
-        return null;
+    private void checkWinner() {
+        // Check rows, columns, and diagonals for a winner
+        for (int i = 0; i < 3; i++) {
+            // Check rows
+            if (board[i][0] != null && board[i][0].equals(board[i][1]) && board[i][1].equals(board[i][2])) {
+                winner = board[i][0]; // Set winner
+                return;
+            }
+            // Check columns
+            if (board[0][i] != null && board[0][i].equals(board[1][i]) && board[1][i].equals(board[2][i])) {
+                winner = board[0][i]; // Set winner
+                return;
+            }
+        }
+        // Check diagonals
+        if (board[0][0] != null && board[0][0].equals(board[1][1]) && board[1][1].equals(board[2][2])) {
+            winner = board[0][0]; // Set winner
+            return;
+        }
+        if (board[0][2] != null && board[0][2].equals(board[1][1]) && board[1][1].equals(board[2][0])) {
+            winner = board[0][2]; // Set winner
+            return;
+        }
+    }
+
+    private void switchPlayer() {
+        currentPlayer = currentPlayer.equals("X") ? "O" : "X"; // Switch player
     }
 }

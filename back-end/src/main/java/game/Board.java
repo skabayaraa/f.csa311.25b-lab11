@@ -25,4 +25,9 @@ public class Board {
         newCells[y * 3 + x] = player;
         return new Board(newCells);
     }
+
+    public String[][] getCells() {
+        
+        throw new UnsupportedOperationException("Unimplemented method 'getCells'");
+    }
 }
